@@ -2,6 +2,7 @@ import pygame
 import random
 import sys
 
+
 # Initialize Pygame
 pygame.init()
 
@@ -24,6 +25,8 @@ FPS = 60
 # Load assets
 player_img = pygame.image.load('defender.png')  # Replace with your spaceship image
 invader_img = pygame.image.load('invader1.png')  # Replace with your invader image
+laser_sound = pygame.mixer.Sound('laser.wav')  # Replace with your laser sound file
+explosion_sound = pygame.mixer.Sound('explosion.wav')  # Replace with your explosion sound file
 
 # Scale down images
 player_img = pygame.transform.scale(player_img, (50, 50))  # Resize player to 50x50
@@ -53,17 +56,21 @@ invader_bullet_speed = 7
 # Game Variables
 score = 0
 game_over = False
+wave = 1
 
 # Font
 font = pygame.font.Font(None, 36)
+
+# Create a starry background
+stars = [{"x": random.randint(0, SCREEN_WIDTH), "y": random.randint(0, SCREEN_HEIGHT)} for _ in range(100)]
 
 # Functions
 def create_invaders():
     invaders.clear()  # Ensure the list is empty before adding new invaders
     for i in range(5):  # 5 rows
         for j in range(num_invaders):
-            x = 50 + j * (invader_width + 30)  # Increased horizontal spacing
-            y = 50 + i * (invader_height + 20)  # Increased vertical spacing
+            x = 50 + j * (invader_width + 30)
+            y = 50 + i * (invader_height + 20)
             invaders.append({"x": x, "y": y, "direction": 1})
 
 def draw_player(x, y):
@@ -74,12 +81,15 @@ def draw_invaders():
         screen.blit(invader_img, (invader["x"], invader["y"]))
 
 def move_invaders():
+    global game_over
     for invader in invaders:
         invader["x"] += invader["direction"] * invader_speed
         # Change direction at screen edge
         if invader["x"] <= 0 or invader["x"] >= SCREEN_WIDTH - invader_width:
             invader["direction"] *= -1
-            invader["y"] += 10  # Move down when changing direction
+            invader["y"] += 10
+            if invader["y"] >= player_y - invader_height:
+                game_over = True
 
 def draw_bullets():
     for bullet in bullets:
@@ -107,6 +117,7 @@ def handle_collisions():
                 bullets.remove(bullet)
                 invaders.remove(invader)
                 score += 10
+                explosion_sound.play()
                 break
 
     for bullet in invader_bullets:
@@ -122,10 +133,19 @@ def display_game_over():
     game_over_text = font.render("GAME OVER", True, RED)
     screen.blit(game_over_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2))
 
+def draw_starry_background():
+    for star in stars:
+        pygame.draw.circle(screen, WHITE, (star["x"], star["y"]), 2)
+        star["y"] += 1
+        if star["y"] > SCREEN_HEIGHT:
+            star["y"] = 0
+            star["x"] = random.randint(0, SCREEN_WIDTH)
+
 # Game loop
 create_invaders()
 while True:
     screen.fill(BLACK)
+    draw_starry_background()
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -137,8 +157,9 @@ while True:
         player_x -= player_speed
     if keys[pygame.K_RIGHT] and player_x < SCREEN_WIDTH - player_width:
         player_x += player_speed
-    if keys[pygame.K_SPACE] and len(bullets) < 5:  # Limit number of bullets
+    if keys[pygame.K_SPACE] and len(bullets) < 5:
         bullets.append({"x": player_x + player_width // 2 - bullet_width // 2, "y": player_y})
+        laser_sound.play()
 
     if not game_over:
         move_invaders()
@@ -149,6 +170,11 @@ while True:
         draw_invaders()
         draw_bullets()
         display_score()
+
+        if not invaders:
+            wave += 1
+            invader_speed += 2
+            create_invaders()
     else:
         display_game_over()
 
