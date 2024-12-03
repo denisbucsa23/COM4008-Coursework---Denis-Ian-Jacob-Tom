@@ -1,7 +1,7 @@
 import pygame
 import random
 import sys
-#ADDING COMMENTS
+
 # Initialize Pygame
 pygame.init()
 
@@ -48,7 +48,7 @@ bullet_width, bullet_height = 5, 10
 
 # Invader bullets
 invader_bullets = []
-invader_bullet_speed = 4
+invader_bullet_speed = 7
 
 # Game Variables
 score = 0
