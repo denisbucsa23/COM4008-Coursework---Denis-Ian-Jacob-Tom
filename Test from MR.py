@@ -17,18 +17,17 @@ BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+YELLOW = (255, 255, 0)
 
-# Clock
 clock = pygame.time.Clock()
 FPS = 60
 
-# Load assets
 player_img = pygame.image.load('defender.png')
 invader_img = pygame.image.load('invader1.png')
 laser_sound = pygame.mixer.Sound('laser.wav')
 explosion_sound = pygame.mixer.Sound('explosion.wav')
 
-# Scale down images
 player_img = pygame.transform.scale(player_img, (50, 50))
 invader_img = pygame.transform.scale(invader_img, (40, 40))
 
@@ -51,23 +50,28 @@ bullet_speed = default_bullet_speed
 default_bullet_height = 10
 bullet_width, bullet_height = 5, default_bullet_height
 
-# Invader bullets
+# Power-ups
+power_ups = []
+power_up_width, power_up_height = 30, 30
+power_up_speed = 3
+power_up_spawn_chance = 0.005
+active_power_up = None
+power_up_start_time = None
+power_up_duration = 30  # seconds
+
 invader_bullets = []
 invader_bullet_speed = 7
 
-# Game Variables
 score = 0
 high_score = 0
 game_over = False
 wave = 1
 
-# Font
 font = pygame.font.Font(None, 36)
 
-# Create a starry background
 stars = [{"x": random.randint(0, SCREEN_WIDTH), "y": random.randint(0, SCREEN_HEIGHT)} for _ in range(100)]
 
-# Functions
+# Functions ;
 def create_invaders():
     invaders.clear()
     for i in range(5):  # 5 rows
@@ -87,7 +91,6 @@ def move_invaders():
     global game_over
     for invader in invaders:
         invader["x"] += invader["direction"] * invader_speed
-        # Change direction at screen edge
         if invader["x"] <= 0 or invader["x"] >= SCREEN_WIDTH - invader_width:
             invader["direction"] *= -1
             invader["y"] += 10
@@ -107,9 +110,49 @@ def move_bullets():
     for bullet in invader_bullets:
         bullet["y"] += invader_bullet_speed
 
-    # Remove off-screen bullets
     bullets[:] = [b for b in bullets if b["y"] > 0]
     invader_bullets[:] = [b for b in invader_bullets if b["y"] < SCREEN_HEIGHT]
+
+def spawn_power_up():
+    if random.random() < power_up_spawn_chance and active_power_up is None:
+        power_ups.append({
+            "x": random.randint(0, SCREEN_WIDTH - power_up_width),
+            "y": player_y,
+            "type": random.choice(["yellow", "blue", "green"]),
+        })
+
+def move_power_ups():
+    for power_up in power_ups:
+        power_up["x"] += power_up_speed
+        if power_up["x"] > SCREEN_WIDTH:
+            power_ups.remove(power_up)
+
+def draw_power_ups():
+    for power_up in power_ups:
+        color = YELLOW if power_up["type"] == "yellow" else BLUE if power_up["type"] == "blue" else GREEN
+        pygame.draw.rect(screen, color, pygame.Rect(power_up["x"], power_up["y"], power_up_width, power_up_height))
+
+def handle_power_up_collision():
+    global bullet_speed, bullet_height, invaders, active_power_up, power_up_start_time
+    for power_up in power_ups[:]:
+        if power_up["x"] in range(player_x, player_x + player_width) and \
+           power_up["y"] in range(player_y, player_y + player_height):
+            active_power_up = power_up["type"]
+            power_up_start_time = time.time()
+            power_ups.remove(power_up)
+            if active_power_up == "yellow":
+                bullet_speed += 3
+            elif active_power_up == "blue":
+                bullet_height += 10
+            elif active_power_up == "green":
+                invaders.clear()
+
+def check_power_up_expiry():
+    global bullet_speed, bullet_height, active_power_up, power_up_start_time
+    if active_power_up and (time.time() - power_up_start_time > power_up_duration):
+        bullet_speed = default_bullet_speed
+        bullet_height = default_bullet_height
+        active_power_up = None
 
 def handle_collisions():
     global score, game_over, high_score
@@ -121,7 +164,7 @@ def handle_collisions():
                 invaders.remove(invader)
                 score += 10
                 explosion_sound.play()
-                high_score = max(high_score,score)
+                high_score = max(high_score, score)
                 break
 
     for bullet in invader_bullets:
@@ -130,13 +173,12 @@ def handle_collisions():
             game_over = True
 
 def display_score():
-    #ian visnevschi change:
     score_text = font.render(f"Score: {score}", True, WHITE)
     high_score_text = font.render(f"High Score: {high_score}", True, WHITE)
-    wave_text  = font.render(f"Wave:{wave}",True,WHITE)
-    screen.blit(high_score_text,(10,40))
-    screen.blit(wave_text, (10,70))
+    wave_text = font.render(f"Wave: {wave}", True, WHITE)
     screen.blit(score_text, (10, 10))
+    screen.blit(high_score_text, (10, 40))
+    screen.blit(wave_text, (10, 70))
 
 def display_game_over():
     game_over_text = font.render("GAME OVER", True, RED)
@@ -152,8 +194,21 @@ def draw_starry_background():
             star["y"] = 0
             star["x"] = random.randint(0, SCREEN_WIDTH)
 
-# Game loop
+def display_power_up_info():
+    if active_power_up:
+        remaining_time = max(0, int(power_up_duration - (time.time() - power_up_start_time)))
+        power_up_text = f"Power-Up: {active_power_up.capitalize()} ({remaining_time}s)"
+        effect = {
+            "yellow": "Faster Bullets",
+            "blue": "Big Bullets",
+            "green": "Clear Invader wave"
+        }.get(active_power_up, "Unknown Effect")
+        power_up_info_text = font.render(f"{power_up_text} - {effect}", True, WHITE)
+        screen.blit(power_up_info_text, (SCREEN_WIDTH - 530, 10))
+
+# game loop
 create_invaders()
+
 while True:
     screen.fill(BLACK)
     draw_starry_background()
@@ -187,14 +242,20 @@ while True:
         game_over = False
 
     if not game_over:
+        spawn_power_up()
         move_invaders()
         move_bullets()
+        move_power_ups()
         handle_collisions()
+        handle_power_up_collision()
+        check_power_up_expiry()
 
         draw_player(player_x, player_y)
         draw_invaders()
         draw_bullets()
+        draw_power_ups()
         display_score()
+        display_power_up_info()
 
         if not invaders:
             wave += 1
@@ -204,4 +265,5 @@ while True:
         display_game_over()
 
     pygame.display.flip()
+
     clock.tick(FPS)
