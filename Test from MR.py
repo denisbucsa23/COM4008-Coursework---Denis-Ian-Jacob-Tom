@@ -46,8 +46,10 @@ invader_width, invader_height = invader_img.get_size()
 
 # Bullet properties
 bullets = []
-bullet_speed = 7
-bullet_width, bullet_height = 5, 10
+default_bullet_speed = 7
+bullet_speed = default_bullet_speed
+default_bullet_height = 10
+bullet_width, bullet_height = 5, default_bullet_height
 
 # Invader bullets
 invader_bullets = []
@@ -131,7 +133,9 @@ def display_score():
 
 def display_game_over():
     game_over_text = font.render("GAME OVER", True, RED)
+    restart_text = font.render("Press R to Restart", True, WHITE)
     screen.blit(game_over_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2))
+    screen.blit(restart_text, (SCREEN_WIDTH // 2 - 120, SCREEN_HEIGHT // 2 + 50))
 
 def draw_starry_background():
     for star in stars:
@@ -160,6 +164,20 @@ while True:
     if keys[pygame.K_SPACE] and len(bullets) < 5:
         bullets.append({"x": player_x + player_width // 2 - bullet_width // 2, "y": player_y})
         laser_sound.play()
+    if game_over and keys[pygame.K_r]:
+        player_x = SCREEN_WIDTH // 2 - player_width // 2
+        player_y = SCREEN_HEIGHT - player_height - 10
+        bullets.clear()
+        invader_bullets.clear()
+        invaders.clear()
+        create_invaders()
+        score = 0
+        wave = 1
+        invader_speed = 2
+        bullet_speed = default_bullet_speed
+        bullet_height = default_bullet_height
+        active_power_up = None
+        game_over = False
 
     if not game_over:
         move_invaders()
