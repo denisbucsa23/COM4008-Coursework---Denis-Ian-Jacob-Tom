@@ -130,6 +130,7 @@ def handle_collisions():
             game_over = True
 
 def display_score():
+    #ian visnevschi change:
     score_text = font.render(f"Score: {score}", True, WHITE)
     high_score_text = font.render(f"High Score: {high_score}", True, WHITE)
     wave_text  = font.render(f"Wave:{wave}",True,WHITE)
