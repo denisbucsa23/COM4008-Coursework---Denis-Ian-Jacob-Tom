@@ -1,7 +1,7 @@
 import pygame
 import random
 import sys
-
+import time
 
 # Initialize Pygame
 pygame.init()
@@ -23,14 +23,14 @@ clock = pygame.time.Clock()
 FPS = 60
 
 # Load assets
-player_img = pygame.image.load('defender.png')  # Replace with your spaceship image
-invader_img = pygame.image.load('invader1.png')  # Replace with your invader image
-laser_sound = pygame.mixer.Sound('laser.wav')  # Replace with your laser sound file
-explosion_sound = pygame.mixer.Sound('explosion.wav')  # Replace with your explosion sound file
+player_img = pygame.image.load('defender.png')
+invader_img = pygame.image.load('invader1.png')
+laser_sound = pygame.mixer.Sound('laser.wav')
+explosion_sound = pygame.mixer.Sound('explosion.wav')
 
 # Scale down images
-player_img = pygame.transform.scale(player_img, (50, 50))  # Resize player to 50x50
-invader_img = pygame.transform.scale(invader_img, (40, 40))  # Resize invader to 40x40
+player_img = pygame.transform.scale(player_img, (50, 50))
+invader_img = pygame.transform.scale(invader_img, (40, 40))
 
 # Player properties
 player_speed = 5
@@ -57,6 +57,7 @@ invader_bullet_speed = 7
 
 # Game Variables
 score = 0
+high_score = 0
 game_over = False
 wave = 1
 
@@ -68,7 +69,7 @@ stars = [{"x": random.randint(0, SCREEN_WIDTH), "y": random.randint(0, SCREEN_HE
 
 # Functions
 def create_invaders():
-    invaders.clear()  # Ensure the list is empty before adding new invaders
+    invaders.clear()
     for i in range(5):  # 5 rows
         for j in range(num_invaders):
             x = 50 + j * (invader_width + 30)
@@ -111,7 +112,7 @@ def move_bullets():
     invader_bullets[:] = [b for b in invader_bullets if b["y"] < SCREEN_HEIGHT]
 
 def handle_collisions():
-    global score, game_over
+    global score, game_over, high_score
     for bullet in bullets[:]:
         for invader in invaders[:]:
             if bullet["x"] in range(invader["x"], invader["x"] + invader_width) and \
@@ -120,6 +121,7 @@ def handle_collisions():
                 invaders.remove(invader)
                 score += 10
                 explosion_sound.play()
+                high_score = max(high_score,score)
                 break
 
     for bullet in invader_bullets:
@@ -129,6 +131,10 @@ def handle_collisions():
 
 def display_score():
     score_text = font.render(f"Score: {score}", True, WHITE)
+    high_score_text = font.render(f"High Score: {high_score}", True, WHITE)
+    wave_text  = font.render(f"Wave:{wave}",True,WHITE)
+    screen.blit(high_score_text,(10,40))
+    screen.blit(wave_text, (10,70))
     screen.blit(score_text, (10, 10))
 
 def display_game_over():
